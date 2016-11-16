@@ -14,4 +14,6 @@ ab -c 5 -n 150 localhost:8080/wishlist
 For Reactor junt run:
 ab -c 5 -n 150 localhost:8080/wishlistReactor
 
+*Maybe you need to increase the numbers from 150 to 200 or 250. Depends on the machine.
+
 You will see that when you run the reactor endpoint some JSON deserialization will fail due to the response going to another call. 
