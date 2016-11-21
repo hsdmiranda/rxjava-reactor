@@ -1,9 +1,9 @@
-package com.example.aggregator.client;
+package com.example.aggregator.httpclient;
 
-import com.example.aggregator.client.dto.ProductContentDto;
-import com.example.aggregator.client.dto.ProductRatingDto;
-import com.example.aggregator.client.dto.RatingsModel;
-import com.example.aggregator.client.dto.WishlistsDto;
+import com.example.aggregator.httpclient.dto.ProductContentDto;
+import com.example.aggregator.httpclient.dto.ProductRatingDto;
+import com.example.aggregator.httpclient.dto.RatingsModel;
+import com.example.aggregator.httpclient.dto.WishlistsDto;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.netflix.ribbon.RequestTemplate;
@@ -19,7 +19,6 @@ import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 import rx.Observable;
 
-import javax.annotation.PostConstruct;
 import java.io.IOException;
 import java.nio.charset.Charset;
 
@@ -33,12 +32,12 @@ public class OLGHttpClient {
 
     private ObjectMapper mapper = new ObjectMapper();
 
-    @PostConstruct
-    public void init() {
+    public OLGHttpClient() {
         httpResourceGroup = Ribbon.createHttpResourceGroup(GROUP_NAME);
     }
 
-    public Observable<WishlistsDto> getWishList(String authorId) {
+
+    public Observable<WishlistsDto> getWishListRxJava(String authorId) {
         HttpRequestTemplate<ByteBuf> templateGetWishlistBySocialListId = httpResourceGroup.newTemplateBuilder("OLG.GetWishlistByAuthorId", ByteBuf.class)
                 .withMethod("GET")
                 .withUriTemplate("/wishlist?author_id={author_id}")
@@ -67,7 +66,7 @@ public class OLGHttpClient {
     }
 
 
-    public Observable<ProductRatingDto> getRatings(String productId) {
+    public Observable<ProductRatingDto> getRatingsRxJava(String productId) {
         RequestTemplate templateGetRatingsByGlobalId = httpResourceGroup.newTemplateBuilder("OLG.GetRatingsByGlobalId", ByteBuf.class)
                 .withMethod("GET")
                 .withUriTemplate("/ratings?product_id={product_id}")
@@ -93,10 +92,10 @@ public class OLGHttpClient {
                     } else {
                         return Observable.just(new ProductRatingDto());
                     }
-                }).doOnError(throwable -> LOG.warn("OLG.getRatings com.example.aggregator.client exception for productId " + productId, throwable));
+                }).doOnError(throwable -> LOG.warn("OLG.getRatingsRxJava com.example.aggregator.client exception for productId " + productId, throwable));
     }
 
-    public Observable<ProductContentDto> getProduct(String productId) {
+    public Observable<ProductContentDto> getProductRxJava(String productId) {
         RequestTemplate templateGetRatingsByGlobalId = httpResourceGroup.newTemplateBuilder("OLG.GetProductsById", ByteBuf.class)
                 .withMethod("GET")
                 .withUriTemplate("/products?product_id={product_id}")
@@ -126,14 +125,14 @@ public class OLGHttpClient {
     }
 
     public Mono<WishlistsDto> getWishListReactor(String authorId) {
-        return RxConversion.toMono(getWishList(authorId));
+        return RxConversion.toMono(getWishListRxJava(authorId));
     }
 
     public Mono<ProductContentDto> getProductReactor(String productId) {
-        return RxConversion.toMono(getProduct(productId));
+        return RxConversion.toMono(getProductRxJava(productId));
     }
 
     public Mono<ProductRatingDto> getRatingsReactor(String productId) {
-        return RxConversion.toMono(getRatings(productId));
+        return RxConversion.toMono(getRatingsRxJava(productId));
     }
 }

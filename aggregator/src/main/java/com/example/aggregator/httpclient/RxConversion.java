@@ -1,4 +1,4 @@
-package com.example.aggregator.client;
+package com.example.aggregator.httpclient;
 
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;

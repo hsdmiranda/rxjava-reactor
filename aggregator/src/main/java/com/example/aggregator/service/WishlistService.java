@@ -1,33 +1,25 @@
 package com.example.aggregator.service;
 
-import com.example.aggregator.client.dto.ProductContentDto;
-import com.example.aggregator.client.dto.ProductRatingDto;
-import com.example.aggregator.client.dto.WishlistDto;
-import com.example.aggregator.repository.ProductContentRepository;
-import com.example.aggregator.repository.RatingsRepository;
-import com.example.aggregator.repository.WishlistRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
+import com.example.aggregator.httpclient.OLGHttpClient;
+import com.example.aggregator.httpclient.dto.ProductContentDto;
+import com.example.aggregator.httpclient.dto.ProductRatingDto;
+import com.example.aggregator.httpclient.dto.WishlistDto;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import rx.Observable;
 
-@Service
 public class WishlistService {
 
-    @Autowired
-    private RatingsRepository ratingsRepository;
+    private OLGHttpClient olgHttpClient;
 
-    @Autowired
-    private ProductContentRepository productContentRepository;
+    public WishlistService() {
+        olgHttpClient = new OLGHttpClient();
+    }
 
-    @Autowired
-    private WishlistRepository wishlistRepository;
-
-    public Observable<WishlistResponse> getWishlists(String authorId) {
-        return wishlistRepository.getWishlist(authorId)
+    public Observable<WishlistResponse> getWishlistsRxJava(String authorId) {
+        return olgHttpClient.getWishListRxJava(authorId)
                 .flatMap(wishlistsDto ->
-                        Observable.from(wishlistsDto.getWishlists()).concatMap(wishlistDto -> composeWishlist(wishlistDto))
+                        Observable.from(wishlistsDto.getWishlists()).concatMap(wishlistDto -> composeWishlistRxJava(wishlistDto))
                                 .toList())
                 .concatMap(wishlistItemResponses -> {
                     WishlistResponse wishlistResponse = new WishlistResponse();
@@ -36,12 +28,12 @@ public class WishlistService {
         });
     }
 
-    private Observable<WishlistItemResponse> composeWishlist(WishlistDto wishlistDto) {
+    private Observable<WishlistItemResponse> composeWishlistRxJava(WishlistDto wishlistDto) {
         Observable<String> productsId = Observable.from(wishlistDto.getProductsId());
 
         return productsId.flatMap(id -> {
-            Observable<ProductRatingDto> productRating = ratingsRepository.ratingModel(id);
-            Observable<ProductContentDto> productContent = productContentRepository.getProductContentDto(id);
+            Observable<ProductRatingDto> productRating = olgHttpClient.getRatingsRxJava(id);
+            Observable<ProductContentDto> productContent = olgHttpClient.getProductRxJava(id);
 
             return Observable.zip(productRating, productContent, (pr, pc) -> {
                 WishlistItemResponse wishlistItemResponse = new WishlistItemResponse();
@@ -54,7 +46,7 @@ public class WishlistService {
     }
 
     public Flux<WishlistResponse> getWishlistsReactor(String authorId) {
-        return wishlistRepository.getWishlistReactor(authorId)
+        return olgHttpClient.getWishListReactor(authorId)
                 .flatMap(wishlistsDto ->
                         Flux.fromIterable(wishlistsDto.getWishlists()).concatMap(wishlistDto -> composeWishlistReactor(wishlistDto))
                                 .collectList())
@@ -69,8 +61,8 @@ public class WishlistService {
         Flux<String> productsId = Flux.fromIterable(wishlistDto.getProductsId());
 
         return productsId.flatMap(id -> {
-            Mono<ProductRatingDto> productRating = ratingsRepository.ratingModelReactor(id);
-            Mono<ProductContentDto> productContent = productContentRepository.getProductContentDtoReactor(id);
+            Mono<ProductRatingDto> productRating = olgHttpClient.getRatingsReactor(id);
+            Mono<ProductContentDto> productContent = olgHttpClient.getProductReactor(id);
 
             return Flux.zip(productRating, productContent, (pr, pc) -> {
                 WishlistItemResponse wishlistItemResponse = new WishlistItemResponse();

@@ -1,4 +1,4 @@
-package com.example.aggregator.client.dto;
+package com.example.aggregator.httpclient.dto;
 
 public class ProductContentDto {
 
