@@ -14,15 +14,16 @@ public class AggregatorApplication {
         WishlistService wishlistService = new WishlistService();
 
         while (execute) {
+            wishlistService.getWishlistsReactorNetty("1") // This is the call using Reactor 3 and reactor-netty.
 //            wishlistService.getWishlistsRxJava("1") // This is the call using RxNetty. You can easily see the output
-            wishlistService.getWishlistsReactorNetty("1")  // Reactor-netty call. Sometimes the problem will occurs.
+//            wishlistService.getWishlistsReactorNettyAndHystrix("1")  // Reactor-netty call with RxJava and Hystrix. Sometimes the problem will occurs.
                 .subscribe(
                         wishlistResponse -> System.out.println(wishlistResponse),
                         t-> {
                             System.out.println(t);
                             System.exit(0);
                         });
-            Thread.sleep(400);
+            Thread.sleep(40);
         }
     }
 }

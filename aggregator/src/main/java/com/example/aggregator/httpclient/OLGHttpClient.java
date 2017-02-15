@@ -72,8 +72,7 @@ public class OLGHttpClient {
                 });
     }
 
-    @HystrixCommand(groupKey = "OLG", commandKey = "OLG.GetWishlistByAuthorId", observableExecutionMode = ObservableExecutionMode.LAZY)
-    public Observable<WishlistsDto> getWishListReactorNetty(String authorId) {
+    public Mono<WishlistsDto> getWishListReactorNetty(String authorId) {
         String url = "/wishlist?author_id={author_id}".replace("{author_id}", authorId);
 
         Mono<WishlistsDto> result = httpClient.get(url, r -> r
@@ -91,7 +90,7 @@ public class OLGHttpClient {
                     }
                 });
 
-        return RxConversion.toObservable(result);
+        return result;
     }
 
 
@@ -124,8 +123,7 @@ public class OLGHttpClient {
                 }).doOnError(throwable -> LOG.warn("OLG.getRatingsRxJava com.example.aggregator.client exception for productId " + productId, throwable));
     }
 
-    @HystrixCommand(groupKey = "OLG", commandKey = "OLG.GetRatingsByGlobalId", observableExecutionMode = ObservableExecutionMode.LAZY)
-    public Observable<ProductRatingDto> getRatingsReactorNetty(String productId) {
+    public Flux<ProductRatingDto> getRatingsReactorNetty(String productId) {
         String url = "/ratings?product_id={product_id}".replace("{product_id}", productId);
 
         Flux<ProductRatingDto> result = httpClient.get(url, r -> r
@@ -143,7 +141,7 @@ public class OLGHttpClient {
                     }
                 });
 
-        return RxConversion.toObservable(result);
+        return result;
     }
 
     public Observable<ProductContentDto> getProductRxNetty(String productId) {
@@ -175,8 +173,7 @@ public class OLGHttpClient {
                 });
     }
 
-    @HystrixCommand(groupKey = "OLG", commandKey = "OLG.GetProductsById", observableExecutionMode = ObservableExecutionMode.LAZY)
-    public Observable<ProductContentDto> getProductReactorNetty(String productId) {
+    public Mono<ProductContentDto> getProductReactorNetty(String productId) {
         String url = "/products?product_id={product_id}".replace("{product_id}", productId);
 
         Mono<ProductContentDto> result = httpClient.get(url, r -> r
@@ -194,9 +191,23 @@ public class OLGHttpClient {
                     }
                 });
 
-        return RxConversion.toObservable(result);
+        return result;
     }
 
+    @HystrixCommand(groupKey = "OLG", commandKey = "OLG.GetProductsById", observableExecutionMode = ObservableExecutionMode.LAZY)
+    public Observable<ProductContentDto> getProductReactorNettyAndHystrix(String productId) {
+        return RxConversion.toObservable(getProductReactorNetty(productId));
+    }
+
+    @HystrixCommand(groupKey = "OLG", commandKey = "OLG.GetRatingsByGlobalId", observableExecutionMode = ObservableExecutionMode.LAZY)
+    public Observable<ProductRatingDto> getRatingsReactorNettyAndHystrix(String productId) {
+        return RxConversion.toObservable(getRatingsReactorNetty(productId));
+    }
+
+    @HystrixCommand(groupKey = "OLG", commandKey = "OLG.GetWishlistByAuthorId", observableExecutionMode = ObservableExecutionMode.LAZY)
+    public Observable<WishlistsDto> getWishListReactorNettyAndHystrix(String authorId) {
+        return RxConversion.toObservable(getWishListReactorNetty(authorId));
+    }
 //    public Mono<WishlistsDto> getWishListReactor(String authorId) {
 //        return RxConversion.toMono(getWishListRxNetty(authorId));
 //    }
