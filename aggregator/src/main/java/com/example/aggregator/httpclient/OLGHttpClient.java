@@ -6,6 +6,8 @@ import com.example.aggregator.httpclient.dto.RatingsModel;
 import com.example.aggregator.httpclient.dto.WishlistsDto;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
+import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
+import com.netflix.hystrix.contrib.javanica.annotation.ObservableExecutionMode;
 import com.netflix.ribbon.RequestTemplate;
 import com.netflix.ribbon.Ribbon;
 import com.netflix.ribbon.http.HttpRequestTemplate;
@@ -16,7 +18,10 @@ import io.netty.buffer.EmptyByteBuf;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.ipc.netty.http.client.HttpClient;
+import reactor.ipc.netty.http.client.HttpClientException;
 import rx.Observable;
 
 import java.io.IOException;
@@ -32,12 +37,14 @@ public class OLGHttpClient {
 
     private ObjectMapper mapper = new ObjectMapper();
 
+    private HttpClient httpClient;
+
     public OLGHttpClient() {
         httpResourceGroup = Ribbon.createHttpResourceGroup(GROUP_NAME);
+        httpClient = HttpClient.create("localhost",8081);
     }
 
-
-    public Observable<WishlistsDto> getWishListRxJava(String authorId) {
+    public Observable<WishlistsDto> getWishListRxNetty(String authorId) {
         HttpRequestTemplate<ByteBuf> templateGetWishlistBySocialListId = httpResourceGroup.newTemplateBuilder("OLG.GetWishlistByAuthorId", ByteBuf.class)
                 .withMethod("GET")
                 .withUriTemplate("/wishlist?author_id={author_id}")
@@ -65,8 +72,30 @@ public class OLGHttpClient {
                 });
     }
 
+    @HystrixCommand(groupKey = "OLG", commandKey = "OLG.GetWishlistByAuthorId", observableExecutionMode = ObservableExecutionMode.LAZY)
+    public Observable<WishlistsDto> getWishListReactorNetty(String authorId) {
+        String url = "/wishlist?author_id={author_id}".replace("{author_id}", authorId);
 
-    public Observable<ProductRatingDto> getRatingsRxJava(String productId) {
+        Mono<WishlistsDto> result = httpClient.get(url, r -> r
+                .addHeader("Accept", "application/json"))
+                .then(response -> response.receive().aggregate().asByteArray().otherwise(t -> Mono.error(t)))
+                .otherwise(HttpClientException.class, e -> Mono.empty())
+                .map(bytes -> {
+                    String json = new String(bytes);
+                    try {
+                        ObjectReader reader = mapper.readerFor(WishlistsDto.class);
+                        WishlistsDto model = reader.readValue(json);
+                        return model;
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                });
+
+        return RxConversion.toObservable(result);
+    }
+
+
+    public Observable<ProductRatingDto> getRatingsRxNetty(String productId) {
         RequestTemplate templateGetRatingsByGlobalId = httpResourceGroup.newTemplateBuilder("OLG.GetRatingsByGlobalId", ByteBuf.class)
                 .withMethod("GET")
                 .withUriTemplate("/ratings?product_id={product_id}")
@@ -95,7 +124,29 @@ public class OLGHttpClient {
                 }).doOnError(throwable -> LOG.warn("OLG.getRatingsRxJava com.example.aggregator.client exception for productId " + productId, throwable));
     }
 
-    public Observable<ProductContentDto> getProductRxJava(String productId) {
+    @HystrixCommand(groupKey = "OLG", commandKey = "OLG.GetRatingsByGlobalId", observableExecutionMode = ObservableExecutionMode.LAZY)
+    public Observable<ProductRatingDto> getRatingsReactorNetty(String productId) {
+        String url = "/ratings?product_id={product_id}".replace("{product_id}", productId);
+
+        Flux<ProductRatingDto> result = httpClient.get(url, r -> r
+                .addHeader("Accept", "application/json"))
+                .then(response -> response.receive().aggregate().asByteArray().otherwise(t -> Mono.error(t)))
+                .otherwise(HttpClientException.class, e -> Mono.empty())
+                .flatMap(bytes -> {
+                    String json = new String(bytes);
+                    try {
+                        ObjectReader reader = mapper.readerFor(RatingsModel.class);
+                        RatingsModel model = reader.readValue(json);
+                        return Flux.fromIterable(model.getProducts());
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                });
+
+        return RxConversion.toObservable(result);
+    }
+
+    public Observable<ProductContentDto> getProductRxNetty(String productId) {
         RequestTemplate templateGetRatingsByGlobalId = httpResourceGroup.newTemplateBuilder("OLG.GetProductsById", ByteBuf.class)
                 .withMethod("GET")
                 .withUriTemplate("/products?product_id={product_id}")
@@ -124,15 +175,37 @@ public class OLGHttpClient {
                 });
     }
 
-    public Mono<WishlistsDto> getWishListReactor(String authorId) {
-        return RxConversion.toMono(getWishListRxJava(authorId));
+    @HystrixCommand(groupKey = "OLG", commandKey = "OLG.GetProductsById", observableExecutionMode = ObservableExecutionMode.LAZY)
+    public Observable<ProductContentDto> getProductReactorNetty(String productId) {
+        String url = "/products?product_id={product_id}".replace("{product_id}", productId);
+
+        Mono<ProductContentDto> result = httpClient.get(url, r -> r
+                .addHeader("Accept", "application/json"))
+                .then(response -> response.receive().aggregate().asByteArray().otherwise(t -> Mono.error(t)))
+                .otherwise(HttpClientException.class, e -> Mono.empty())
+                .map(bytes -> {
+                    String json = new String(bytes);
+                    try {
+                        ObjectReader reader = mapper.readerFor(ProductContentDto.class);
+                        ProductContentDto model = reader.readValue(json);
+                        return model;
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                });
+
+        return RxConversion.toObservable(result);
     }
 
-    public Mono<ProductContentDto> getProductReactor(String productId) {
-        return RxConversion.toMono(getProductRxJava(productId));
-    }
-
-    public Mono<ProductRatingDto> getRatingsReactor(String productId) {
-        return RxConversion.toMono(getRatingsRxJava(productId));
-    }
+//    public Mono<WishlistsDto> getWishListReactor(String authorId) {
+//        return RxConversion.toMono(getWishListRxNetty(authorId));
+//    }
+//
+//    public Mono<ProductContentDto> getProductReactor(String productId) {
+//        return RxConversion.toMono(getProductRxNetty(productId));
+//    }
+//
+//    public Mono<ProductRatingDto> getRatingsReactor(String productId) {
+//        return RxConversion.toMono(getRatingsRxNetty(productId));
+//    }
 }

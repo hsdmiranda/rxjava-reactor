@@ -33,6 +33,11 @@
 			<groupId>org.springframework.cloud</groupId>
 			<artifactId>spring-cloud-starter-ribbon</artifactId>
 		</dependency>
+		<dependency>
+			<groupId>io.projectreactor.ipc</groupId>
+			<artifactId>reactor-netty</artifactId>
+			<version>0.6.0.RELEASE</version>
+		</dependency>
 
 		<dependency>
 			<groupId>io.netty</groupId>
@@ -73,7 +78,7 @@
 		<dependency>
 			<groupId>io.projectreactor</groupId>
 			<artifactId>reactor-core</artifactId>
-			<version>3.0.3.RELEASE</version>
+			<version>3.0.4.RELEASE</version>
 		</dependency>
 
 		<dependency>

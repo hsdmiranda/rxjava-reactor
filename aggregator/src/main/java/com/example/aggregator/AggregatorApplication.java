@@ -14,15 +14,15 @@ public class AggregatorApplication {
         WishlistService wishlistService = new WishlistService();
 
         while (execute) {
-            wishlistService.getWishlistsRxJava("1") // This is the call using RXJAVA. No JSON Deserialization error occurs when using this.
-            //wishlistService.getWishlistsReactor("1")  // Reactor call. You will see that JSON deserialization happens from time to time. Due to response going to wrong methods.
+//            wishlistService.getWishlistsRxJava("1") // This is the call using RxNetty. You can easily see the output
+            wishlistService.getWishlistsReactorNetty("1")  // Reactor-netty call. Sometimes the problem will occurs.
                 .subscribe(
                         wishlistResponse -> System.out.println(wishlistResponse),
                         t-> {
                             System.out.println(t);
                             System.exit(0);
                         });
-            Thread.sleep(40);
+            Thread.sleep(400);
         }
     }
 }

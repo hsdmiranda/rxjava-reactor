@@ -17,7 +17,7 @@ public class WishlistService {
     }
 
     public Observable<WishlistResponse> getWishlistsRxJava(String authorId) {
-        return olgHttpClient.getWishListRxJava(authorId)
+        return olgHttpClient.getWishListRxNetty(authorId)
                 .flatMap(wishlistsDto ->
                         Observable.from(wishlistsDto.getWishlists()).concatMap(wishlistDto -> composeWishlistRxJava(wishlistDto))
                                 .toList())
@@ -32,8 +32,8 @@ public class WishlistService {
         Observable<String> productsId = Observable.from(wishlistDto.getProductsId());
 
         return productsId.flatMap(id -> {
-            Observable<ProductRatingDto> productRating = olgHttpClient.getRatingsRxJava(id);
-            Observable<ProductContentDto> productContent = olgHttpClient.getProductRxJava(id);
+            Observable<ProductRatingDto> productRating = olgHttpClient.getRatingsRxNetty(id);
+            Observable<ProductContentDto> productContent = olgHttpClient.getProductRxNetty(id);
 
             return Observable.zip(productRating, productContent, (pr, pc) -> {
                 WishlistItemResponse wishlistItemResponse = new WishlistItemResponse();
@@ -45,26 +45,26 @@ public class WishlistService {
         });
     }
 
-    public Flux<WishlistResponse> getWishlistsReactor(String authorId) {
-        return olgHttpClient.getWishListReactor(authorId)
+    public Observable<WishlistResponse> getWishlistsReactorNetty(String authorId) {
+        return olgHttpClient.getWishListReactorNetty(authorId)
                 .flatMap(wishlistsDto ->
-                        Flux.fromIterable(wishlistsDto.getWishlists()).concatMap(wishlistDto -> composeWishlistReactor(wishlistDto))
-                                .collectList())
+                        Observable.from(wishlistsDto.getWishlists()).concatMap(wishlistDto -> composeWishlistReactorNetty(wishlistDto))
+                                .toList())
                 .concatMap(wishlistItemResponses -> {
                     WishlistResponse wishlistResponse = new WishlistResponse();
                     wishlistResponse.setWishlistItems(wishlistItemResponses);
-                    return Mono.just(wishlistResponse);
+                    return Observable.just(wishlistResponse);
                 });
     }
 
-    private Flux<WishlistItemResponse> composeWishlistReactor(WishlistDto wishlistDto) {
-        Flux<String> productsId = Flux.fromIterable(wishlistDto.getProductsId());
+    private Observable<WishlistItemResponse> composeWishlistReactorNetty(WishlistDto wishlistDto) {
+        Observable<String> productsId = Observable.from(wishlistDto.getProductsId());
 
         return productsId.flatMap(id -> {
-            Mono<ProductRatingDto> productRating = olgHttpClient.getRatingsReactor(id);
-            Mono<ProductContentDto> productContent = olgHttpClient.getProductReactor(id);
+            Observable<ProductRatingDto> productRating = olgHttpClient.getRatingsReactorNetty(id);
+            Observable<ProductContentDto> productContent = olgHttpClient.getProductReactorNetty(id);
 
-            return Flux.zip(productRating, productContent, (pr, pc) -> {
+            return Observable.zip(productRating, productContent, (pr, pc) -> {
                 WishlistItemResponse wishlistItemResponse = new WishlistItemResponse();
                 wishlistItemResponse.setProductId(id);
                 wishlistItemResponse.setProductRating(pr.getAverageRating());
