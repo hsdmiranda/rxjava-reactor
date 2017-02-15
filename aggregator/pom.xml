@@ -18,6 +18,14 @@
 		<relativePath/> <!-- lookup parent from com.example.aggregator.repository -->
 	</parent>
 
+	<repositories>
+		<repository>
+			<id>spring-repo</id>
+			<name>Spring Repository</name>
+			<url>https://repo.spring.io/snapshot</url>
+		</repository>
+	</repositories>
+
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
@@ -36,7 +44,8 @@
 		<dependency>
 			<groupId>io.projectreactor.ipc</groupId>
 			<artifactId>reactor-netty</artifactId>
-			<version>0.6.0.RELEASE</version>
+			<!--<version>0.6.0.RELEASE</version>-->
+			<version>0.6.1.BUILD-SNAPSHOT</version>
 		</dependency>
 
 		<dependency>
